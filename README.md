@@ -56,9 +56,10 @@ GUILD_ID=your_server_id
 ORCHESTRATOR_CHANNEL_ID=your_orchestrator_channel_id
 PROJECTS_CATEGORY_ID=          # optional
 
-AI_PROVIDER=anthropic           # anthropic | openai | deepseek | groq
+AI_PROVIDER=anthropic           # see "Supported AI Providers" below
 AI_MODEL=claude-opus-4-6
-AI_API_KEY=sk-ant-...
+AI_API_KEY=your_api_key
+# AI_BASE_URL=                  # required only for openai-compatible
 
 # Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ENCRYPTION_KEY=your_32_byte_hex_key
@@ -121,9 +122,10 @@ Set all environment variables in Coolify's **Environment Variables** tab:
 | `GUILD_ID` | Your Discord server ID |
 | `ORCHESTRATOR_CHANNEL_ID` | Your `#orchestrator` channel ID |
 | `PROJECTS_CATEGORY_ID` | Optional category ID |
-| `AI_PROVIDER` | `anthropic` (or `openai`, `deepseek`, `groq`) |
-| `AI_MODEL` | e.g. `claude-opus-4-6` |
-| `AI_API_KEY` | Your AI provider API key |
+| `AI_PROVIDER` | See "Supported AI Providers" below |
+| `AI_MODEL` | Model name for your chosen provider |
+| `AI_API_KEY` | API key for your chosen provider |
+| `AI_BASE_URL` | Only required for `openai-compatible` |
 | `ENCRYPTION_KEY` | 32-byte hex key (generate locally first) |
 | `DATABASE_URL` | Internal connection string from step 1 |
 | `NATS_URL` | Internal NATS URL from step 2 |
@@ -133,6 +135,26 @@ Set all environment variables in Coolify's **Environment Variables** tab:
 Click **Deploy**. Coolify builds the image, runs migrations automatically on startup, and starts the bot.
 
 To redeploy after a code push: push to your main branch — Coolify redeploys automatically if you enable the webhook.
+
+---
+
+## Supported AI Providers
+
+Set `AI_PROVIDER` to one of the following values:
+
+| `AI_PROVIDER` | Provider | Example models | API key |
+|---|---|---|---|
+| `anthropic` | Anthropic | `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5` | [console.anthropic.com](https://console.anthropic.com) |
+| `openai` | OpenAI | `gpt-4o`, `gpt-4o-mini`, `o3`, `o4-mini` | [platform.openai.com](https://platform.openai.com) |
+| `google` | Google Gemini | `gemini-2.0-flash`, `gemini-2.0-pro`, `gemini-1.5-pro` | [aistudio.google.com](https://aistudio.google.com) |
+| `mistral` | Mistral AI | `mistral-large-latest`, `mistral-small-latest` | [console.mistral.ai](https://console.mistral.ai) |
+| `groq` | Groq | `llama-3.3-70b-versatile`, `deepseek-r1-distill-llama-70b` | [console.groq.com](https://console.groq.com) |
+| `xai` | xAI (Grok) | `grok-2`, `grok-3` | [console.x.ai](https://console.x.ai) |
+| `cohere` | Cohere | `command-r-plus`, `command-r` | [dashboard.cohere.com](https://dashboard.cohere.com) |
+| `deepseek` | DeepSeek | `deepseek-chat`, `deepseek-reasoner` | [platform.deepseek.com](https://platform.deepseek.com) |
+| `openai-compatible` | Any OpenAI-compatible API | depends on endpoint | — |
+
+For `openai-compatible`, also set `AI_BASE_URL` to the endpoint (e.g. `http://localhost:11434/v1` for Ollama, `https://api.together.xyz/v1` for Together AI).
 
 ---
 
