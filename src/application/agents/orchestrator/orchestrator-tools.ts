@@ -1,0 +1,86 @@
+import { tool } from 'ai';
+import { z } from 'zod';
+import type { ChannelManagementPort } from '../../ports/outbound/channel-management.port.js';
+import type { ProjectRegistryPort } from '../../ports/outbound/project-registry.port.js';
+import type { EventBusPort } from '../../ports/outbound/event-bus.port.js';
+
+export interface OrchestratorToolDeps {
+  channelManagement: ChannelManagementPort;
+  projectRegistry: ProjectRegistryPort;
+  eventBus: EventBusPort;
+  projectsCategoryId?: string;
+}
+
+export function buildOrchestratorTools(deps: {
+  toolDeps: OrchestratorToolDeps;
+  guildId: string;
+  userId: string;
+}) {
+  const { toolDeps, guildId, userId } = deps;
+  const encoder = new TextEncoder();
+
+  return {
+    list_projects: tool({
+      description: 'List all n8n projects in this Discord server',
+      parameters: z.object({}),
+      execute: async () => {
+        const projects = await toolDeps.projectRegistry.listAll(guildId);
+        return projects.map((p) => ({
+          name: p.name,
+          channelId: p.channelId,
+          n8nUrl: p.n8nConfig.apiUrl,
+          purpose: p.purpose,
+          status: p.status,
+        }));
+      },
+    }),
+
+    create_project: tool({
+      description: 'Create a new n8n project with its own Discord channel. Always run list_projects first to check for duplicates. Collect all four required fields before calling.',
+      parameters: z.object({
+        projectName: z.string().describe('Human-readable project name (e.g. "Acme Corp")'),
+        channelName: z.string().describe('Discord channel slug (lowercase, hyphenated, max 32 chars)'),
+        n8nUrl: z.string().describe('n8n API base URL including /api/v1 suffix'),
+        n8nApiKey: z.string().describe('n8n API key for the project'),
+        purpose: z.string().optional().describe('What this project automates (1-2 sentences)'),
+      }),
+      execute: async ({ projectName, channelName, n8nUrl, n8nApiKey, purpose }) => {
+        const { channelId } = await toolDeps.channelManagement.createTextChannel(
+          guildId,
+          channelName,
+          toolDeps.projectsCategoryId,
+          `n8n workspace for ${projectName}`,
+        );
+
+        const project = await toolDeps.projectRegistry.create({
+          channelId,
+          guildId,
+          name: projectName,
+          purpose,
+          n8nConfig: { apiUrl: n8nUrl, apiKey: n8nApiKey },
+          createdBy: userId,
+        });
+
+        await toolDeps.eventBus.publish({
+          subject: 'orchestr8ai.discord.project.created',
+          data: encoder.encode(JSON.stringify({ channelId, projectName, guildId, projectId: project.id })),
+          msgId: project.id,
+        });
+
+        return { success: true, channelId, projectId: project.id, message: `Project "${projectName}" created. Channel: <#${channelId}>` };
+      },
+    }),
+
+    update_project_status: tool({
+      description: 'Update the status of a project (active, paused, archived)',
+      parameters: z.object({
+        channelId: z.string().describe('Discord channel ID of the project to update'),
+        status: z.enum(['active', 'paused', 'archived']),
+      }),
+      execute: async ({ channelId, status }) => {
+        await toolDeps.projectRegistry.updateStatus(channelId, status);
+        return { success: true, message: `Project status updated to ${status}` };
+      },
+    }),
+  };
+}

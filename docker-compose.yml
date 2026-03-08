@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: orchestr8ai-postgres
+    environment:
+      POSTGRES_USER: orchestr8ai
+      POSTGRES_PASSWORD: orchestr8ai_dev
+      POSTGRES_DB: orchestr8ai_dev
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - orchestr8ai-pg-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestr8ai -d orchestr8ai_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: orchestr8ai-nats
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITOR_PORT:-8222}:8222"
+    volumes:
+      - orchestr8ai-nats-data:/data
+      - ./docker/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: orchestr8ai-clickhouse
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - orchestr8ai-ch-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: orchestr8ai-otel
+    command: ["--config", "/etc/otel/config.yaml"]
+    ports:
+      - "${OTEL_GRPC_PORT:-4317}:4317"
+      - "${OTEL_HTTP_PORT:-4318}:4318"
+      - "${OTEL_HEALTH_PORT:-13133}:13133"
+    volumes:
+      - ./docker/otel/collector-config.yaml:/etc/otel/config.yaml:ro
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  orchestr8ai-pg-data:
+  orchestr8ai-nats-data:
+  orchestr8ai-ch-data:
