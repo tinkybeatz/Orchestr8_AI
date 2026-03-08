@@ -12,6 +12,9 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
+# Pre-install n8n-mcp so the first tool call doesn't wait for npx to download it
+RUN npm install -g n8n-mcp
+
 # Compiled application
 COPY --from=builder /app/dist ./dist
 
