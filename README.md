@@ -15,76 +15,126 @@ Discord Server
 - **`#orchestrator`** — Talk to the orchestrator agent to create new project channels, list all projects, or update project status. Provide the project name, n8n URL, API key, and purpose.
 - **Project channels** — Each channel has a full n8n expert agent (all 7 skill sets) connected exclusively to that project's n8n instance. Conversation history persists across messages.
 
-## Prerequisites
+---
 
-- Node.js ≥ 20
-- Docker (for PostgreSQL, NATS, ClickHouse, OTEL)
-- A Discord bot token with `Manage Channels`, `Send Messages`, `Read Message History` permissions and **Message Content Intent** enabled
-- An AI provider API key (Anthropic, OpenAI, DeepSeek, or Groq)
+## Step 1 — Discord bot (do this first, either way)
 
-## Setup
-
-### 1. Discord bot (one-time)
-
-1. Go to [discord.com/developers/applications](https://discord.com/developers/applications) → New Application → "Orchestr8_AI"
-2. **Bot** tab → Add Bot → enable **Message Content Intent** → copy the token
+1. Go to [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application** → name it "Orchestr8_AI"
+2. **Bot** tab → **Add Bot** → enable **Message Content Intent** → copy the token
 3. **OAuth2** → URL Generator → scopes: `bot` → permissions: `Manage Channels`, `Send Messages`, `Read Message History`
-4. Open the generated URL to invite Orchestr8_AI to your server
-5. Create a `#orchestrator` channel → right-click → **Copy Channel ID** → save as `ORCHESTRATOR_CHANNEL_ID`
-6. Optional: Create a "N8N Projects" category → **Copy ID** → save as `PROJECTS_CATEGORY_ID`
+4. Open the generated URL to invite the bot to your server
+5. In your Discord server, create a `#orchestrator` channel → right-click it → **Copy Channel ID** → save it
+6. Optional: create a "N8N Projects" category → **Copy ID** → save it
 
-### 2. Environment
+You now have: `DISCORD_TOKEN`, `GUILD_ID`, `ORCHESTRATOR_CHANNEL_ID`, and optionally `PROJECTS_CATEGORY_ID`.
+
+---
+
+## Setup A — Local
+
+**Prerequisites:** Node.js ≥ 20, Docker
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-username/orchestr8ai.git
+cd orchestr8ai
+npm install
+```
+
+### 2. Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with your values:
 
 ```env
-# Discord
 DISCORD_TOKEN=your_bot_token
 GUILD_ID=your_server_id
-ORCHESTRATOR_CHANNEL_ID=channel_id_of_orchestrator
+ORCHESTRATOR_CHANNEL_ID=your_orchestrator_channel_id
+PROJECTS_CATEGORY_ID=          # optional
 
-# Optional: put project channels inside a category
-PROJECTS_CATEGORY_ID=
-
-# AI provider (anthropic | openai | deepseek | groq)
-AI_PROVIDER=anthropic
+AI_PROVIDER=anthropic           # anthropic | openai | deepseek | groq
 AI_MODEL=claude-opus-4-6
 AI_API_KEY=sk-ant-...
-# AI_BASE_URL=   # optional, for custom endpoints
 
-# Encryption key for n8n API keys at rest (32-byte hex)
 # Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-ENCRYPTION_KEY=
+ENCRYPTION_KEY=your_32_byte_hex_key
 
-# Infrastructure (defaults work with docker compose)
+# These defaults match docker-compose.yml — no changes needed
 DATABASE_URL=postgresql://orchestr8ai:orchestr8ai_dev@localhost:5432/orchestr8ai_dev
 NATS_URL=nats://localhost:4222
 ```
 
-### 3. Start infrastructure
+### 3. Start infrastructure and run
 
 ```bash
-npm run infra:up    # starts PostgreSQL, NATS, ClickHouse, OTEL via docker compose
+npm run infra:up    # starts PostgreSQL, NATS, ClickHouse, OTEL via Docker Compose
 npm run db:migrate  # applies SQL migrations
+npm run dev         # starts the bot
 ```
 
-### 4. Install and run
+---
 
-```bash
-npm install
-npm run dev
+## Setup B — VPS with Coolify
+
+**Prerequisites:** A VPS with [Coolify](https://coolify.io) installed, this repo pushed to GitHub.
+
+Coolify will build the Docker image from the included `Dockerfile` and manage the app container. PostgreSQL and NATS run as separate Coolify services.
+
+### 1. Add a PostgreSQL service
+
+In Coolify → **New Resource** → **Database** → **PostgreSQL 17**
+
+- Set a strong password → **Deploy**
+- Copy the internal connection string — you'll use it as `DATABASE_URL`
+
+### 2. Add a NATS service
+
+In Coolify → **New Resource** → **Docker Compose** → paste:
+
+```yaml
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js"]
+    ports:
+      - "4222:4222"
 ```
 
-Or in production:
+Deploy it. Your `NATS_URL` will be `nats://nats:4222` (internal) or `nats://your-vps-ip:4222` (external).
 
-```bash
-npm run build
-node dist/main.js
-```
+### 3. Deploy Orchestr8_AI
+
+In Coolify → **New Resource** → **Application** → connect your GitHub repo.
+
+- Build pack: **Dockerfile**
+- Port: leave empty (no HTTP exposure needed)
+
+Set all environment variables in Coolify's **Environment Variables** tab:
+
+| Variable | Value |
+|---|---|
+| `DISCORD_TOKEN` | Your bot token |
+| `GUILD_ID` | Your Discord server ID |
+| `ORCHESTRATOR_CHANNEL_ID` | Your `#orchestrator` channel ID |
+| `PROJECTS_CATEGORY_ID` | Optional category ID |
+| `AI_PROVIDER` | `anthropic` (or `openai`, `deepseek`, `groq`) |
+| `AI_MODEL` | e.g. `claude-opus-4-6` |
+| `AI_API_KEY` | Your AI provider API key |
+| `ENCRYPTION_KEY` | 32-byte hex key (generate locally first) |
+| `DATABASE_URL` | Internal connection string from step 1 |
+| `NATS_URL` | Internal NATS URL from step 2 |
+
+### 4. Deploy
+
+Click **Deploy**. Coolify builds the image, runs migrations automatically on startup, and starts the bot.
+
+To redeploy after a code push: push to your main branch — Coolify redeploys automatically if you enable the webhook.
+
+---
 
 ## Usage
 
@@ -108,8 +158,6 @@ Show me the Invoice Generator workflow
 Add an error handler to the main workflow
 ```
 
-Orchestr8_AI connects to Acme's n8n instance and operates as a full n8n expert. The conversation history persists — it remembers context from earlier in the channel.
-
 ### Managing projects
 
 In `#orchestrator`:
@@ -120,15 +168,19 @@ Pause the beta-startup project
 Archive gamma-tech
 ```
 
+---
+
 ## Development
 
 ```bash
 npm run typecheck   # TypeScript type check
 npm run lint        # ESLint
-npm run check       # All architecture checks (deps, cycles, file size, contracts)
+npm run check       # Architecture checks (deps, cycles, file size, contracts)
 npm run test        # Vitest
 npm run ci          # Full pipeline
 ```
+
+---
 
 ## Architecture
 
