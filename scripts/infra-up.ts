@@ -12,7 +12,7 @@ execSync('docker compose up -d', { cwd: ROOT, stdio: 'inherit' });
 
 console.info('[infra-up] Waiting for services to become healthy...');
 
-const MAX_WAIT_MS = 60_000;
+const MAX_WAIT_MS = 120_000;
 const POLL_MS = 2_000;
 
 type CheckFn = () => Promise<boolean>;
@@ -46,9 +46,9 @@ function tcpReady(host: string, port: number, timeoutMs = 3000): Promise<boolean
 }
 
 const services: ServiceCheck[] = [
-  { name: 'PostgreSQL', check: () => Promise.resolve(dockerHealthy('bob-postgres')) },
-  { name: 'NATS', check: () => Promise.resolve(dockerHealthy('bob-nats')) },
-  { name: 'ClickHouse', check: () => Promise.resolve(dockerHealthy('bob-clickhouse')) },
+  { name: 'PostgreSQL', check: () => Promise.resolve(dockerHealthy('orchestr8ai-postgres')) },
+  { name: 'NATS', check: () => Promise.resolve(dockerHealthy('orchestr8ai-nats')) },
+  { name: 'ClickHouse', check: () => Promise.resolve(dockerHealthy('orchestr8ai-clickhouse')) },
   // OTel has healthcheck disabled (scratch image) — use TCP probe on health port
   { name: 'OTel Collector', check: () => tcpReady('localhost', 13133) },
 ];
