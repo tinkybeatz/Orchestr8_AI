@@ -39,12 +39,12 @@ src/
 
 ## Available Roles
 
-Users invoke roles with a `/rolename` prefix in Discord messages. Default = N8N_EXPERT.
+Users invoke roles with a `/rolename` prefix in Discord messages. Default = N8N_BASE.
 
 | Prefix | Role | Purpose |
 |--------|------|---------|
-| *(none)* | N8N_EXPERT | Build, debug, and optimize n8n workflows via MCP |
-| `/expert` | N8N_EXPERT | Explicit n8n execution role |
+| *(none)* | N8N_BASE | Everyday tasks: check status, activate/deactivate, quick edits |
+| `/expert` | N8N_EXPERT | Full expert mode: all 7 skill files loaded, complex builds |
 | `/fixer` | FIXER | Safe, non-destructive workflow repair |
 | `/tasker` | TASKER | Produce a step-by-step technical plan for n8n work |
 | `/documentor` | DOCUMENTOR | Document workflows, runbooks, node descriptions |
@@ -53,8 +53,8 @@ Users invoke roles with a `/rolename` prefix in Discord messages. Default = N8N_
 
 ## N8N Knowledge Base
 
-All n8n technical knowledge lives in `docs/skills/`. The N8N_EXPERT role reads all
-these files before acting. Other roles read them on demand.
+All n8n technical knowledge lives in `docs/skills/`. These files are injected into the
+system prompt **only when using `/expert`** mode. Other roles rely on built-in model knowledge.
 
 Available skill files:
 - `docs/skills/n8n-mcp-tools-expert.md` — MCP tools reference

@@ -6,7 +6,7 @@ import type { ProjectRecord } from '../../ports/outbound/project-registry.port.j
 import type { ProjectDocumentsPort } from '../../ports/outbound/project-documents.port.js';
 import { buildProjectTools } from './project-tools.js';
 
-const CONTEXT_WINDOW = 40;
+const CONTEXT_WINDOW = 20;
 
 const ROLE_PROFILES: Record<string, string> = {
   expert: 'N8N_EXPERT.md',
@@ -27,16 +27,16 @@ const SKILL_FILES = [
   'n8n-code-python.md',
 ];
 
-function parseRole(message: string): { profileFile: string; content: string; isExpert: boolean } {
+function parseRole(message: string): { profileFile: string; content: string; withSkills: boolean } {
   const match = /^\/(\w+)\s+/.exec(message);
   if (match) {
     const prefix = match[1]!.toLowerCase();
     const profileFile = ROLE_PROFILES[prefix];
     if (profileFile) {
-      return { profileFile, content: message.slice(match[0].length), isExpert: prefix === 'expert' };
+      return { profileFile, content: message.slice(match[0].length), withSkills: prefix === 'expert' };
     }
   }
-  return { profileFile: 'N8N_EXPERT.md', content: message, isExpert: true };
+  return { profileFile: 'N8N_BASE.md', content: message, withSkills: false };
 }
 
 export class ProjectAgent {
@@ -48,16 +48,15 @@ export class ProjectAgent {
   ) {}
 
   async handle(project: ProjectRecord, userMessage: string, userId: string): Promise<string> {
-    const { profileFile, content, isExpert } = parseRole(userMessage);
+    const { profileFile, content, withSkills } = parseRole(userMessage);
 
     const init = readFileSync(join(this.docsDir, 'INIT.md'), 'utf8');
     const profile = readFileSync(join(this.docsDir, 'profiles', profileFile), 'utf8');
-
-    const skillsText = isExpert
+    const skillsText = withSkills
       ? SKILL_FILES.map((f) => readFileSync(join(this.docsDir, 'skills', f), 'utf8')).join('\n\n---\n\n')
       : '';
 
-    const system = [init, profile, ...(isExpert ? [skillsText] : [])].join('\n\n---\n\n');
+    const system = [init, profile, ...(withSkills ? [skillsText] : [])].join('\n\n---\n\n');
 
     const history = await this.context.load(project.channelId, CONTEXT_WINDOW);
     const messages = [
