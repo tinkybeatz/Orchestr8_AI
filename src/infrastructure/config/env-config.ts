@@ -21,6 +21,10 @@ export interface EnvConfig {
   aiModel: string;
   aiApiKey: string;
   aiBaseUrl: string | undefined;
+  /** Override input token price in $/MTok (env: AI_INPUT_PRICE_PER_MTOK). */
+  aiInputPricePerMTok: number | undefined;
+  /** Override output token price in $/MTok (env: AI_OUTPUT_PRICE_PER_MTOK). */
+  aiOutputPricePerMTok: number | undefined;
 }
 
 const VALID_PROVIDERS: AiProvider[] = [
@@ -63,6 +67,13 @@ export function loadEnvConfig(): EnvConfig {
     process.exit(1);
   }
 
+  const parseOptionalFloat = (key: string): number | undefined => {
+    const val = process.env[key];
+    if (!val) return undefined;
+    const n = parseFloat(val);
+    return isNaN(n) ? undefined : n;
+  };
+
   return {
     databaseUrl: process.env['DATABASE_URL']!,
     natsUrl: process.env['NATS_URL']!,
@@ -75,5 +86,7 @@ export function loadEnvConfig(): EnvConfig {
     aiModel: process.env['AI_MODEL']!,
     aiApiKey: process.env['AI_API_KEY']!,
     aiBaseUrl: process.env['AI_BASE_URL'],
+    aiInputPricePerMTok: parseOptionalFloat('AI_INPUT_PRICE_PER_MTOK'),
+    aiOutputPricePerMTok: parseOptionalFloat('AI_OUTPUT_PRICE_PER_MTOK'),
   };
 }

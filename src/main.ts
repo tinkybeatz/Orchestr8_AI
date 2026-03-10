@@ -39,7 +39,11 @@ const eventBus = new JetStreamEventBus(config.natsUrl);
 await eventBus.connect();
 const telemetry = new ConsoleTelemetryAdapter();
 const model = buildModel(config);
-const aiAgent = new AiSdkAdapter(model);
+const priceOverride =
+  config.aiInputPricePerMTok !== undefined && config.aiOutputPricePerMTok !== undefined
+    ? { input: config.aiInputPricePerMTok, output: config.aiOutputPricePerMTok }
+    : undefined;
+const aiAgent = new AiSdkAdapter(model, priceOverride);
 
 // Discord
 const discordAdapter = new DiscordTextAdapter(config.discordToken);

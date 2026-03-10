@@ -16,6 +16,17 @@ export interface AiRunOptions {
   readonly maxSteps?: number;
 }
 
+export interface AiUsage {
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly costUsd: number | null; // null = model not in price table
+}
+
+export interface AiRunResult {
+  readonly text: string;
+  readonly usage: AiUsage;
+}
+
 export interface AiAgentPort {
-  run(options: AiRunOptions): Promise<string>;
+  run(options: AiRunOptions): Promise<AiRunResult>;
 }

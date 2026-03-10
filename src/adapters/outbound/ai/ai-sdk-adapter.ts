@@ -1,7 +1,25 @@
 import { generateText } from 'ai';
 import type { LanguageModel, CoreMessage, Tool } from 'ai';
 import { createN8nTools } from './n8n-mcp-client.js';
-import type { AiAgentPort, AiRunOptions } from '../../../application/ports/outbound/ai-agent.port.js';
+import type { AiAgentPort, AiRunOptions, AiRunResult } from '../../../application/ports/outbound/ai-agent.port.js';
+
+/**
+ * Built-in price table ($/MTok for input and output).
+ * Used when no env-var override is provided.
+ * Add entries here as new models become commonly used.
+ */
+const MODEL_PRICES: Record<string, { input: number; output: number }> = {
+  'gemini-2.0-flash':           { input: 0.10,  output: 0.40  },
+  'gemini-2.5-flash':           { input: 0.30,  output: 2.50  },
+  'gemini-1.5-flash':           { input: 0.075, output: 0.30  },
+  'claude-haiku-4-5-20251001':  { input: 1.00,  output: 5.00  },
+  'claude-sonnet-4-5-20251001': { input: 3.00,  output: 15.00 },
+  'gpt-4o-mini':                { input: 0.60,  output: 2.40  },
+  'gpt-4o':                     { input: 5.00,  output: 20.00 },
+  'llama-3.3-70b-versatile':    { input: 0.59,  output: 0.79  },
+  'llama-3.1-8b-instant':       { input: 0.05,  output: 0.08  },
+  'deepseek-chat':              { input: 0.28,  output: 0.42  },
+};
 
 /**
  * Recursively patches bare object-type properties in a JSON schema by adding
@@ -68,9 +86,13 @@ function sanitizeTools(tools: Record<string, Tool>): Record<string, Tool> {
 }
 
 export class AiSdkAdapter implements AiAgentPort {
-  constructor(private readonly model: LanguageModel) {}
+  constructor(
+    private readonly model: LanguageModel,
+    /** Optional price override ($/MTok). Takes precedence over the built-in table. */
+    private readonly priceOverride?: { input: number; output: number },
+  ) {}
 
-  async run(options: AiRunOptions): Promise<string> {
+  async run(options: AiRunOptions): Promise<AiRunResult> {
     const { system, messages, tools, n8nConfig, maxSteps = 5 } = options;
 
     let n8nTools: Record<string, Tool> = {};
@@ -101,7 +123,17 @@ export class AiSdkAdapter implements AiAgentPort {
         tools: Object.keys(allTools).length > 0 ? allTools : undefined,
         maxSteps,
       });
-      return result.text;
+
+      const { promptTokens = 0, completionTokens = 0 } = result.usage ?? {};
+      const price = this.priceOverride ?? MODEL_PRICES[this.model.modelId];
+      const costUsd = price
+        ? (promptTokens * price.input + completionTokens * price.output) / 1_000_000
+        : null;
+
+      return {
+        text: result.text,
+        usage: { inputTokens: promptTokens, outputTokens: completionTokens, costUsd },
+      };
     } finally {
       if (closeMcp) await closeMcp();
     }

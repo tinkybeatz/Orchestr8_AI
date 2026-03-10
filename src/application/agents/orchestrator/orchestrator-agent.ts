@@ -6,6 +6,18 @@ import { buildOrchestratorTools, type OrchestratorToolDeps } from './orchestrato
 
 const CONTEXT_WINDOW = 20;
 
+function formatTokens(n: number): string {
+  if (n < 1_000) return `${n}`;
+  return `${(n / 1_000).toFixed(n < 10_000 ? 1 : 0)}k`;
+}
+
+function formatCost(usd: number | null): string {
+  if (usd === null) return '?';
+  if (usd < 0.0001) return '<$0.0001';
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
 export class OrchestratorAgent {
   constructor(
     private readonly aiAgent: AiAgentPort,
@@ -28,11 +40,14 @@ export class OrchestratorAgent {
 
     const tools = buildOrchestratorTools({ toolDeps: this.toolDeps, guildId, userId });
 
-    const reply = await this.aiAgent.run({ system, messages, tools });
+    const { text, usage } = await this.aiAgent.run({ system, messages, tools });
+
+    const total = usage.inputTokens + usage.outputTokens;
+    const reply = `${text}\n\n*(${formatTokens(total)} tokens, ${formatCost(usage.costUsd)})*`;
 
     await this.context.append(this.channelId, [
       { role: 'user', content: userMessage },
-      { role: 'assistant', content: reply },
+      { role: 'assistant', content: text },
     ]);
 
     return reply;
