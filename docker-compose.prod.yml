@@ -34,7 +34,6 @@ services:
       POSTGRES_DB: orchestr8ai_prod
     volumes:
       - orchestr8ai-pg-data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U orchestr8ai -d orchestr8ai_prod"]
       interval: 5s
@@ -48,10 +47,10 @@ services:
   nats:
     image: nats:2.10-alpine
     restart: unless-stopped
-    command: ["-c", "/etc/nats/nats-server.conf"]
+    # Config passed as CLI flags — no bind mounts needed, works on any platform
+    command: ["-js", "--store_dir", "/data/jetstream", "-m", "8222"]
     volumes:
       - orchestr8ai-nats-data:/data
-      - ./docker/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8222/healthz || exit 1"]
       interval: 5s
