@@ -65,17 +65,25 @@ Available skill files:
 - `docs/skills/n8n-code-javascript.md` — JavaScript in Code nodes
 - `docs/skills/n8n-code-python.md` — Python in Code nodes
 
-## Saving Documentation Permanently
+## Project Agent Tools
 
-To save documentation, notes, or research so it persists across sessions, call the
-`save_doc` tool directly.
+Every project channel agent has the following tools available regardless of role:
 
-Parameters:
+**`save_doc`** — Save (or overwrite) a markdown document to persistent storage.
 - `type` — category: `workflows`, `notes`, `architecture`, `runbook`, `research`
 - `slug` — unique name within that type: `overview`, `telegram-handler`, etc.
 - `content` — markdown content to save
-- If `slug` is omitted, it defaults to `default`
 - Saves are upserted — re-saving with the same type+slug overwrites the previous content
+
+**`get_project_info`** — Read this project's metadata: name, purpose, status, n8n URL, creation date.
+
+**`list_docs`** — List all documents saved for this project (type, slug, last updated).
+
+**`get_doc`** — Retrieve the full content of a specific saved document by type + slug.
+
+**`delete_doc`** — Permanently delete a saved document by type + slug. Always confirm with user first.
+
+**`clear_conversation_history`** — Wipe all conversation history for this channel. Always confirm with user first.
 
 **Do NOT write files to disk.** File writes are ephemeral in Docker. Use `save_doc` instead.
 
