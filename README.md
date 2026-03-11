@@ -79,47 +79,61 @@ npm run dev         # starts the bot
 
 ---
 
-## Setup B — VPS (Docker Compose)
+## Setup B — VPS Deployment
 
-**Prerequisites:** A VPS with [Docker](https://docs.docker.com/engine/install/) installed.
+The project ships with a `docker-compose.prod.yml` that bundles the bot, PostgreSQL, and NATS into a single stack — no external services needed.
 
-### 1. Clone and configure
+### Environment variables
+
+Whether you deploy via a platform UI or manually, you'll need these values:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DISCORD_TOKEN` | ✅ | Discord Developer Portal → your bot → Bot tab |
+| `GUILD_ID` | ✅ | Right-click your Discord server → Copy Server ID |
+| `ORCHESTRATOR_CHANNEL_ID` | ✅ | Right-click `#orchestrator` → Copy Channel ID |
+| `ENCRYPTION_KEY` | ✅ | Run: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `AI_PROVIDER` | ✅ | See "Supported AI Providers" below |
+| `AI_MODEL` | ✅ | Model name for your chosen provider |
+| `AI_API_KEY` | ✅ | API key for your chosen provider |
+| `POSTGRES_PASSWORD` | ✅ | Any strong password — secures the bundled database |
+| `PROJECTS_CATEGORY_ID` | ➖ | Discord category ID for project channels |
+| `AI_BASE_URL` | ➖ | Required only for `openai-compatible` provider |
+| `AI_INPUT_PRICE_PER_MTOK` | ➖ | Input price in $/MTok — only if your model isn't in the built-in table |
+| `AI_OUTPUT_PRICE_PER_MTOK` | ➖ | Output price in $/MTok — only if your model isn't in the built-in table |
+
+---
+
+### Option 1 — Platform deployment (recommended)
+
+Any platform that supports deploying Docker Compose stacks from a Git repository works out of the box — **no local clone or SSH needed**.
+
+1. Point your platform to this repository
+2. Set the compose file to `docker-compose.prod.yml`
+3. Add the environment variables from the table above
+4. Deploy
+
+The platform builds the image, starts all three services, and runs migrations automatically. Most platforms also support auto-redeploy on every git push.
+
+---
+
+### Option 2 — Manual VPS (SSH)
+
+For a plain VPS without a management UI:
 
 ```bash
 git clone https://github.com/your-username/orchestr8ai.git
 cd orchestr8ai
-cp .env.prod.example .env
-```
-
-Edit `.env` — fill in these values:
-
-| Variable | How to get it |
-|---|---|
-| `DISCORD_TOKEN` | Discord Developer Portal → your bot → Bot tab |
-| `GUILD_ID` | Discord → right-click your server → Copy Server ID |
-| `ORCHESTRATOR_CHANNEL_ID` | Right-click `#orchestrator` → Copy Channel ID |
-| `ENCRYPTION_KEY` | Run: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| `AI_PROVIDER` | See "Supported AI Providers" below |
-| `AI_MODEL` | Model name for your chosen provider |
-| `AI_API_KEY` | API key for your chosen provider |
-| `POSTGRES_PASSWORD` | Choose any strong password — used for the bundled database |
-
-### 2. Deploy
-
-```bash
+cp .env.prod.example .env   # then fill in the values from the table above
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-PostgreSQL, NATS, and the bot all start together. Migrations run automatically on startup.
-
-### 3. Verify
+Verify it's running:
 
 ```bash
 docker compose -f docker-compose.prod.yml logs -f orchestr8ai
 # Should show: [Orchestr8_AI] Orchestr8_AI N8N Assistant ready.
 ```
-
-> **Prefer a UI?** [Coolify](https://coolify.io) is also supported — deploy from GitHub and use managed PostgreSQL + NATS services instead of the bundled ones.
 
 ---
 
