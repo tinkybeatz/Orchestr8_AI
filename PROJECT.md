@@ -26,9 +26,10 @@ MessageRouter               ← decides: orchestrator channel or project channel
     ├─ Orchestrator channel ──► OrchestratorAgent
     │                               reads INIT.md + ORCHESTRATOR.md (docs/)
     │                               real tool calls via AI SDK:
-    │                               - list_projects  → Postgres query
-    │                               - create_project → Discord channel + DB + NATS event
+    │                               - list_projects        → Postgres query
+    │                               - create_project       → Discord channel + DB + NATS event
     │                               - update_project_status → DB update
+    │                               - delete_project       → removes DB records + Discord channel
     │
     └─ Project channel ───────► ProjectAgent
                                     reads INIT.md + role profile (docs/profiles/)
@@ -40,9 +41,9 @@ MessageRouter               ← decides: orchestrator channel or project channel
 ### The two agents
 
 **OrchestratorAgent** — lives in the designated orchestrator channel.
-Manages the workspace: create projects, list them, pause/archive.
+Manages the workspace: create projects, list them, pause/archive/delete.
 Does NOT have n8n MCP access. Uses real tool calls (list_projects, create_project,
-update_project_status) wired to the application ports.
+update_project_status, delete_project) wired to the application ports.
 
 **ProjectAgent** — one per project channel, activated by channel ID lookup.
 Full n8n MCP access via `experimental_createMCPClient` with a stdio transport

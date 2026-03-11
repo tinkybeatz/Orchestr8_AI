@@ -22,3 +22,7 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Claude Code — local dev context (not for the repo)
+CLAUDE.md
+.claude/
