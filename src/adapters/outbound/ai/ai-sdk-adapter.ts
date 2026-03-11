@@ -117,14 +117,24 @@ export class AiSdkAdapter implements AiAgentPort {
           anthropic: { cacheControl: { type: 'ephemeral' } },
         },
       };
+      // Strip empty-content messages — Gemini rejects any message where content
+      // is an empty string ("must include at least one parts field").
+      const safeMessages = (messages as CoreMessage[]).filter(
+        (m) => typeof m.content !== 'string' || m.content.trim() !== '',
+      );
+
       const result = await generateText({
         model: this.model,
-        messages: [systemMessage, ...(messages as CoreMessage[])],
+        messages: [systemMessage, ...safeMessages],
         tools: Object.keys(allTools).length > 0 ? allTools : undefined,
         maxSteps,
       });
 
-      const { promptTokens = 0, completionTokens = 0 } = result.usage ?? {};
+      // Guard against NaN — multi-step tool use can produce NaN when some steps
+      // return no usage data and the SDK accumulates them.
+      const safeInt = (n: unknown): number => (Number.isFinite(n) ? (n as number) : 0);
+      const promptTokens = safeInt(result.usage?.promptTokens);
+      const completionTokens = safeInt(result.usage?.completionTokens);
       const price = this.priceOverride ?? MODEL_PRICES[this.model.modelId];
       const costUsd = price
         ? (promptTokens * price.input + completionTokens * price.output) / 1_000_000

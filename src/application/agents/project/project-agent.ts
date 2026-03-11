@@ -82,10 +82,13 @@ export class ProjectAgent {
     const total = usage.inputTokens + usage.outputTokens;
     const reply = `${text}\n\n*(${formatTokens(total)} tokens, ${formatCost(usage.costUsd)})*`;
 
-    await this.context.append(project.channelId, [
+    // Only persist the assistant turn if there is actual text — an empty string
+    // (tool-only response) stored in context crashes Gemini on the next request.
+    const toAppend: Array<{ role: 'user' | 'assistant'; content: string }> = [
       { role: 'user', content: userMessage },
-      { role: 'assistant', content: text },
-    ]);
+    ];
+    if (text.trim()) toAppend.push({ role: 'assistant', content: text });
+    await this.context.append(project.channelId, toAppend);
 
     return reply;
   }
