@@ -25,6 +25,7 @@ const ROLE_PROFILES: Record<string, string> = {
   fixer: 'FIXER.md',
   tasker: 'TASKER.md',
   documentor: 'DOCUMENTOR.md',
+  researcher: 'RESEARCHER.md',
   improver: 'IMPROVER.md',
   product: 'PRODUCT_MANAGER.md',
 };

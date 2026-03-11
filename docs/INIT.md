@@ -47,7 +47,8 @@ Users invoke roles with a `/rolename` prefix in Discord messages. Default = N8N_
 | `/expert` | N8N_EXPERT | Full expert mode: all 7 skill files loaded, complex builds |
 | `/fixer` | FIXER | Safe, non-destructive workflow repair |
 | `/tasker` | TASKER | Produce a step-by-step technical plan for n8n work |
-| `/documentor` | DOCUMENTOR | Document workflows, runbooks, node descriptions |
+| `/documentor` | DOCUMENTOR | Read existing workflows and produce structured documentation (plain-English overview + full technical breakdown) |
+| `/researcher` | RESEARCHER | Research how to implement a feature or integration — evidence-backed synthesis with sources |
 | `/improver` | IMPROVER | Improve `docs/skills/` files based on learned patterns |
 | `/product` | PRODUCT_MANAGER | Strategy, automation backlog, roadmap |
 
