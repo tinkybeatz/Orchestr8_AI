@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { PgPool } from '../../../infrastructure/db/pool.js';
 import type {
   CreateProjectInput,
+  UpdateProjectInput,
   ProjectRecord,
   ProjectRegistryPort,
 } from '../../../application/ports/outbound/project-registry.port.js';
@@ -103,6 +104,44 @@ export class PostgresProjectRegistry implements ProjectRegistryPort {
       ],
     );
     return rowToRecord(rows[0]!, this.encryptionKey);
+  }
+
+  async update(channelId: string, input: UpdateProjectInput): Promise<ProjectRecord> {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (input.name !== undefined) {
+      sets.push(`name = $${idx++}`);
+      values.push(input.name);
+    }
+    if ('purpose' in input) {
+      sets.push(`purpose = $${idx++}`);
+      values.push(input.purpose ?? null);
+    }
+    if (input.n8nConfig?.apiUrl !== undefined) {
+      sets.push(`n8n_url = $${idx++}`);
+      values.push(input.n8nConfig.apiUrl);
+    }
+    if (input.n8nConfig?.apiKey !== undefined) {
+      sets.push(`n8n_key_enc = $${idx++}`);
+      values.push(encrypt(input.n8nConfig.apiKey, this.encryptionKey));
+    }
+
+    if (sets.length === 0) {
+      const existing = await this.findByChannelId(channelId);
+      if (!existing) throw new Error(`Project not found for channel ${channelId}`);
+      return existing;
+    }
+
+    values.push(channelId);
+    const { rows } = await this.pool.query<ProjectRow>(
+      `UPDATE projects SET ${sets.join(', ')} WHERE channel_id = $${idx}
+       RETURNING id, channel_id, guild_id, name, purpose, n8n_url, n8n_key_enc, status, created_at, created_by`,
+      values,
+    );
+    if (!rows[0]) throw new Error(`Project not found for channel ${channelId}`);
+    return rowToRecord(rows[0], this.encryptionKey);
   }
 
   async updateStatus(channelId: string, status: ProjectRecord['status']): Promise<void> {

@@ -27,6 +27,20 @@ export class DiscordChannelManager implements ChannelManagementPort {
     return { channelId: channel.id, channelName: channel.name };
   }
 
+  async renameChannel(channelId: string, name: string): Promise<void> {
+    const channel = await this.client.channels.fetch(channelId);
+    if (channel?.isTextBased() && 'setName' in channel) {
+      await (channel as TextChannel).setName(name);
+    }
+  }
+
+  async setChannelTopic(channelId: string, topic: string): Promise<void> {
+    const channel = await this.client.channels.fetch(channelId);
+    if (channel?.isTextBased() && 'setTopic' in channel) {
+      await (channel as TextChannel).setTopic(topic);
+    }
+  }
+
   async archiveChannel(channelId: string): Promise<void> {
     const channel = await this.client.channels.fetch(channelId);
     if (channel?.isTextBased() && 'setName' in channel) {

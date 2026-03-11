@@ -24,10 +24,17 @@ export interface CreateProjectInput {
   readonly createdBy: string;
 }
 
+export interface UpdateProjectInput {
+  readonly name?: string;
+  readonly purpose?: string | null;
+  readonly n8nConfig?: Partial<N8nConfig>;
+}
+
 export interface ProjectRegistryPort {
   findByChannelId(channelId: string): Promise<ProjectRecord | null>;
   listAll(guildId: string): Promise<ProjectRecord[]>;
   create(input: CreateProjectInput): Promise<ProjectRecord>;
+  update(channelId: string, input: UpdateProjectInput): Promise<ProjectRecord>;
   updateStatus(channelId: string, status: ProjectRecord['status']): Promise<void>;
   delete(channelId: string): Promise<void>;
 }

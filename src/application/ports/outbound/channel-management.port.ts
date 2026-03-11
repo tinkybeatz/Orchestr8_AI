@@ -10,6 +10,8 @@ export interface ChannelManagementPort {
     categoryId?: string,
     topic?: string,
   ): Promise<CreateChannelResult>;
+  renameChannel(channelId: string, name: string): Promise<void>;
+  setChannelTopic(channelId: string, topic: string): Promise<void>;
   archiveChannel(channelId: string): Promise<void>;
   deleteChannel(channelId: string): Promise<void>;
 }
