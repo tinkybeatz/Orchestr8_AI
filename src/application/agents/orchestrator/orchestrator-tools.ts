@@ -3,11 +3,13 @@ import { z } from 'zod';
 import type { ChannelManagementPort } from '../../ports/outbound/channel-management.port.js';
 import type { ProjectRegistryPort } from '../../ports/outbound/project-registry.port.js';
 import type { EventBusPort } from '../../ports/outbound/event-bus.port.js';
+import type { ConversationContextPort } from '../../ports/outbound/conversation-context.port.js';
 
 export interface OrchestratorToolDeps {
   channelManagement: ChannelManagementPort;
   projectRegistry: ProjectRegistryPort;
   eventBus: EventBusPort;
+  conversationContext: ConversationContextPort;
   projectsCategoryId?: string;
 }
 
@@ -80,6 +82,20 @@ export function buildOrchestratorTools(deps: {
       execute: async ({ channelId, status }) => {
         await toolDeps.projectRegistry.updateStatus(channelId, status);
         return { success: true, message: `Project status updated to ${status}` };
+      },
+    }),
+
+    delete_project: tool({
+      description:
+        'Permanently delete a project: removes all DB records (project, documents, conversation history) and deletes the Discord channel. This is irreversible — always confirm with the user before calling.',
+      parameters: z.object({
+        channelId: z.string().describe('Discord channel ID of the project to delete'),
+      }),
+      execute: async ({ channelId }) => {
+        await toolDeps.projectRegistry.delete(channelId);
+        await toolDeps.conversationContext.deleteByChannel(channelId);
+        await toolDeps.channelManagement.deleteChannel(channelId);
+        return { success: true, message: 'Project deleted and channel removed.' };
       },
     }),
   };

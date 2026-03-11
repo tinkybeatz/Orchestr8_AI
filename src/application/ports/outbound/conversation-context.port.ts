@@ -6,4 +6,5 @@ export interface ContextMessage {
 export interface ConversationContextPort {
   load(channelId: string, limit: number): Promise<ContextMessage[]>;
   append(channelId: string, messages: ContextMessage[]): Promise<void>;
+  deleteByChannel(channelId: string): Promise<void>;
 }

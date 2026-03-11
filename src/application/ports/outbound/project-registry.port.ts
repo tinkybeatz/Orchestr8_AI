@@ -29,4 +29,5 @@ export interface ProjectRegistryPort {
   listAll(guildId: string): Promise<ProjectRecord[]>;
   create(input: CreateProjectInput): Promise<ProjectRecord>;
   updateStatus(channelId: string, status: ProjectRecord['status']): Promise<void>;
+  delete(channelId: string): Promise<void>;
 }

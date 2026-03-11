@@ -11,4 +11,5 @@ export interface ChannelManagementPort {
     topic?: string,
   ): Promise<CreateChannelResult>;
   archiveChannel(channelId: string): Promise<void>;
+  deleteChannel(channelId: string): Promise<void>;
 }

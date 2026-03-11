@@ -53,4 +53,8 @@ export class PostgresConversationContext implements ConversationContextPort {
       client.release();
     }
   }
+
+  async deleteByChannel(channelId: string): Promise<void> {
+    await this.pool.query('DELETE FROM conversation_context WHERE channel_id = $1', [channelId]);
+  }
 }

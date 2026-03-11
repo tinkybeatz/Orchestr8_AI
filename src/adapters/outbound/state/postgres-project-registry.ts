@@ -111,4 +111,25 @@ export class PostgresProjectRegistry implements ProjectRegistryPort {
       channelId,
     ]);
   }
+
+  async delete(channelId: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query<{ id: string }>(
+        'SELECT id FROM projects WHERE channel_id = $1',
+        [channelId],
+      );
+      if (rows[0]) {
+        await client.query('DELETE FROM project_documents WHERE project_id = $1', [rows[0].id]);
+      }
+      await client.query('DELETE FROM projects WHERE channel_id = $1', [channelId]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 }

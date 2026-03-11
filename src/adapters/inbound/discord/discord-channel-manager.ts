@@ -34,4 +34,11 @@ export class DiscordChannelManager implements ChannelManagementPort {
       await tc.setName(`archived-${tc.name}`);
     }
   }
+
+  async deleteChannel(channelId: string): Promise<void> {
+    const channel = await this.client.channels.fetch(channelId);
+    if (channel && !channel.isDMBased()) {
+      await channel.delete();
+    }
+  }
 }

@@ -66,6 +66,7 @@ const router = new MessageRouter({
     channelManagement: channelManager,
     projectRegistry,
     eventBus,
+    conversationContext,
     projectsCategoryId: config.projectsCategoryId,
   },
   conversation: discordAdapter,
