@@ -15,4 +15,8 @@ export interface ProjectDocumentsPort {
   ): Promise<void>;
 
   list(projectId: string): Promise<ProjectDocumentRecord[]>;
+
+  get(projectId: string, docType: string, slug: string): Promise<ProjectDocumentRecord | null>;
+
+  delete(projectId: string, docType: string, slug: string): Promise<void>;
 }

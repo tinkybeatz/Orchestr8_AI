@@ -40,4 +40,28 @@ export class PostgresProjectDocuments implements ProjectDocumentsPort {
       updatedAt: r.updated_at,
     }));
   }
+
+  async get(projectId: string, docType: string, slug: string): Promise<ProjectDocumentRecord | null> {
+    const result = await this.pool.query<{
+      doc_type: string;
+      slug: string;
+      content: string;
+      updated_at: Date;
+    }>(
+      `SELECT doc_type, slug, content, updated_at
+       FROM project_documents
+       WHERE project_id = $1 AND doc_type = $2 AND slug = $3`,
+      [projectId, docType, slug],
+    );
+    const r = result.rows[0];
+    if (!r) return null;
+    return { docType: r.doc_type, slug: r.slug, content: r.content, updatedAt: r.updated_at };
+  }
+
+  async delete(projectId: string, docType: string, slug: string): Promise<void> {
+    await this.pool.query(
+      `DELETE FROM project_documents WHERE project_id = $1 AND doc_type = $2 AND slug = $3`,
+      [projectId, docType, slug],
+    );
+  }
 }

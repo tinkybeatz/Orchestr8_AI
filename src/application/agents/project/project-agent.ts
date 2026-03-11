@@ -76,7 +76,12 @@ export class ProjectAgent {
       { role: 'user' as const, content },
     ];
 
-    const tools = buildProjectTools({ documents: this.documents, projectId: project.id, userId });
+    const tools = buildProjectTools({
+      documents: this.documents,
+      conversationContext: this.context,
+      project,
+      userId,
+    });
     const { text, usage } = await this.aiAgent.run({ system, messages, tools, n8nConfig: project.n8nConfig });
 
     const total = usage.inputTokens + usage.outputTokens;
