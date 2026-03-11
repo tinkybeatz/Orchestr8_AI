@@ -4,17 +4,21 @@ services:
     image: orchestr8ai:latest
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      NATS_URL: ${NATS_URL}
+      # Internal URLs — wired to the bundled services, no user configuration needed
+      DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
+      NATS_URL: nats://nats:4222
+      # User-supplied values (from .env)
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       GUILD_ID: ${GUILD_ID}
       ORCHESTRATOR_CHANNEL_ID: ${ORCHESTRATOR_CHANNEL_ID}
-      PROJECTS_CATEGORY_ID: ${PROJECTS_CATEGORY_ID}
+      PROJECTS_CATEGORY_ID: ${PROJECTS_CATEGORY_ID:-}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       AI_PROVIDER: ${AI_PROVIDER}
       AI_MODEL: ${AI_MODEL}
       AI_API_KEY: ${AI_API_KEY}
       AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_INPUT_PRICE_PER_MTOK: ${AI_INPUT_PRICE_PER_MTOK:-}
+      AI_OUTPUT_PRICE_PER_MTOK: ${AI_OUTPUT_PRICE_PER_MTOK:-}
     depends_on:
       postgres:
         condition: service_healthy

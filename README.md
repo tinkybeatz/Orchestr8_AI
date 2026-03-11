@@ -79,62 +79,47 @@ npm run dev         # starts the bot
 
 ---
 
-## Setup B — VPS with Coolify
+## Setup B — VPS (Docker Compose)
 
-**Prerequisites:** A VPS with [Coolify](https://coolify.io) installed, this repo pushed to GitHub.
+**Prerequisites:** A VPS with [Docker](https://docs.docker.com/engine/install/) installed.
 
-Coolify will build the Docker image from the included `Dockerfile` and manage the app container. PostgreSQL and NATS run as separate Coolify services.
+### 1. Clone and configure
 
-### 1. Add a PostgreSQL service
-
-In Coolify → **New Resource** → **Database** → **PostgreSQL 17**
-
-- Set a strong password → **Deploy**
-- Copy the internal connection string — you'll use it as `DATABASE_URL`
-
-### 2. Add a NATS service
-
-In Coolify → **New Resource** → **Docker Compose** → paste:
-
-```yaml
-services:
-  nats:
-    image: nats:2.10-alpine
-    command: ["-js"]
-    ports:
-      - "4222:4222"
+```bash
+git clone https://github.com/your-username/orchestr8ai.git
+cd orchestr8ai
+cp .env.prod.example .env
 ```
 
-Deploy it. Your `NATS_URL` will be `nats://nats:4222` (internal) or `nats://your-vps-ip:4222` (external).
+Edit `.env` — fill in these values:
 
-### 3. Deploy Orchestr8_AI
-
-In Coolify → **New Resource** → **Application** → connect your GitHub repo.
-
-- Build pack: **Dockerfile**
-- Port: leave empty (no HTTP exposure needed)
-
-Set all environment variables in Coolify's **Environment Variables** tab:
-
-| Variable | Value |
+| Variable | How to get it |
 |---|---|
-| `DISCORD_TOKEN` | Your bot token |
-| `GUILD_ID` | Your Discord server ID |
-| `ORCHESTRATOR_CHANNEL_ID` | Your `#orchestrator` channel ID |
-| `PROJECTS_CATEGORY_ID` | Optional category ID |
+| `DISCORD_TOKEN` | Discord Developer Portal → your bot → Bot tab |
+| `GUILD_ID` | Discord → right-click your server → Copy Server ID |
+| `ORCHESTRATOR_CHANNEL_ID` | Right-click `#orchestrator` → Copy Channel ID |
+| `ENCRYPTION_KEY` | Run: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `AI_PROVIDER` | See "Supported AI Providers" below |
 | `AI_MODEL` | Model name for your chosen provider |
 | `AI_API_KEY` | API key for your chosen provider |
-| `AI_BASE_URL` | Only required for `openai-compatible` |
-| `ENCRYPTION_KEY` | 32-byte hex key (generate locally first) |
-| `DATABASE_URL` | Internal connection string from step 1 |
-| `NATS_URL` | Internal NATS URL from step 2 |
+| `POSTGRES_PASSWORD` | Choose any strong password — used for the bundled database |
 
-### 4. Deploy
+### 2. Deploy
 
-Click **Deploy**. Coolify builds the image, runs migrations automatically on startup, and starts the bot.
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
-To redeploy after a code push: push to your main branch — Coolify redeploys automatically if you enable the webhook.
+PostgreSQL, NATS, and the bot all start together. Migrations run automatically on startup.
+
+### 3. Verify
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f orchestr8ai
+# Should show: [Orchestr8_AI] Orchestr8_AI N8N Assistant ready.
+```
+
+> **Prefer a UI?** [Coolify](https://coolify.io) is also supported — deploy from GitHub and use managed PostgreSQL + NATS services instead of the bundled ones.
 
 ---
 
