@@ -139,119 +139,49 @@ docker compose -f docker-compose.prod.yml logs -f orchestr8ai
 
 ## Database Dashboard
 
-Orchestr8_AI ships with [Adminer](https://www.adminer.org/) — a lightweight web UI for
-inspecting the PostgreSQL database. It is included in both the local dev and production Docker stacks.
+Orchestr8_AI includes a built-in read-only dashboard served directly from the bot process —
+no extra Docker service required. It's protected by HTTP Basic Auth with credentials you set
+in your environment variables.
+
+### Setup
+
+Add two env vars (both local and production):
+
+| Variable | Required | Description |
+|---|---|---|
+| `DASHBOARD_USER` | ✅ | Username for HTTP Basic Auth |
+| `DASHBOARD_PASSWORD` | ✅ | Password for HTTP Basic Auth |
+| `DASHBOARD_PORT` | ➖ | Port to listen on (default: `3000`) |
+
+If either credential is missing, the dashboard is disabled and a log message is printed at startup.
 
 ### Local access
 
-After `npm run infra:up`, open: **http://localhost:8080**
+Set the vars in your `.env` file, then `npm run dev`. Open:
 
-Login form:
+**http://localhost:3000/dashboard**
 
-| Field | Value |
+Enter your `DASHBOARD_USER` / `DASHBOARD_PASSWORD` credentials when prompted.
+
+### Production access (Coolify)
+
+1. Add `DASHBOARD_USER`, `DASHBOARD_PASSWORD` to your Coolify environment variables
+2. In the `orchestr8ai` service → **Domains** → add a domain → set **Port** to `3000`
+3. Deploy → open `https://yourdomain.com/dashboard`
+
+The dashboard runs inside the bot container on port 3000. Coolify routes to it directly via
+the internal Docker network — no separate service, no port conflicts.
+
+### What's shown
+
+| Section | Content |
 |---|---|
-| System | PostgreSQL |
-| Server | `postgres` |
-| Username | `orchestr8ai` |
-| Password | `orchestr8ai_dev` |
-| Database | `orchestr8ai_dev` |
+| Projects | All projects — name, status badge, n8n URL, creation date |
+| Workflows | All saved workflows — project, name, documentation status, sync date |
+| Documents | All saved docs — project, type, slug, last updated |
 
-### Production access
-
-In `docker-compose.prod.yml`, Adminer has **no published host port** — it's only reachable
-within the Docker network. Choose one of the following access methods:
-
----
-
-**Option A — Platform domain assignment** *(Coolify — recommended)*
-
-Coolify routes directly to containers via its internal Docker network, so no host port is
-needed. Give Adminer its own domain and protect it with Basic Auth:
-
-1. Open your Coolify project → locate the `adminer` service
-2. **Domains** → add a domain (e.g. `db.yourdomain.com`) — SSL is provisioned automatically
-3. **Security** → enable **Basic Auth** → set a username and password
-4. **Save** → **Redeploy**
-5. Open `https://db.yourdomain.com` — enter the Basic Auth credentials, then log in with the form above
-
----
-
-**Option B — Reverse proxy (nginx or Caddy on manual VPS)**
-
-If nginx or Caddy runs on the same host, join it to the Docker network or proxy to the
-container by name. The simplest approach: expose Adminer only to localhost first, then proxy.
-
-Add a localhost port binding to your deployment (e.g. a `docker-compose.override.yml`):
-
-```yaml
-services:
-  adminer:
-    ports:
-      - "127.0.0.1:8080:8080"
-```
-
-Then proxy to it:
-
-**Nginx:**
-```nginx
-server {
-    listen 443 ssl;
-    server_name db.yourdomain.com;
-    # ... your SSL config ...
-
-    auth_basic "Adminer";
-    auth_basic_user_file /etc/nginx/.htpasswd;  # htpasswd -c /etc/nginx/.htpasswd youruser
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-    }
-}
-```
-
-**Caddy:**
-```
-db.yourdomain.com {
-    basicauth {
-        youruser <bcrypt-hash>   # caddy hash-password --plaintext yourpassword
-    }
-    reverse_proxy 127.0.0.1:8080
-}
-```
-
----
-
-**Option C — SSH tunnel (manual VPS, on-demand access)**
-
-First add a localhost port binding (same override as Option B above), then tunnel from your
-local machine:
-
-```bash
-ssh -L 8080:localhost:8080 user@yourserver
-```
-
-Keep that terminal open and open **http://localhost:8080** in your browser. To run it in the
-background instead:
-
-```bash
-ssh -fNL 8080:localhost:8080 user@yourserver
-```
-
----
-
-### Tables visible after login
-
-| Table | Content |
-|---|---|
-| `projects` | All projects — name, purpose, status, n8n URL, channel IDs |
-| `workflows` | Saved workflow JSON + structured documentation, linked to projects |
-| `project_documents` | Saved docs — type, slug, content, timestamps |
-| `conversation_context` | Per-channel conversation history |
-| `agent_runs` | Agent run states |
-| `run_checkpoints` | Checkpoint states per run |
-| `outbox` | Pending/dispatched NATS events |
-| `schema_versions` | Applied DB migrations |
-
-> `n8n_key_enc` in `projects` stores the AES-256-GCM encrypted API key — the plaintext key is never visible.
+> The `n8n_key_enc` field in `projects` stores an AES-256-GCM encrypted API key — the
+> plaintext is never stored or displayed.
 
 ---
 

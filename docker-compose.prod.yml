@@ -3,6 +3,8 @@ services:
     build: .
     image: orchestr8ai:latest
     restart: unless-stopped
+    expose:
+      - "${DASHBOARD_PORT:-3000}"
     environment:
       # Internal URLs — wired to the bundled services, no user configuration needed
       DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
@@ -19,6 +21,9 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_INPUT_PRICE_PER_MTOK: ${AI_INPUT_PRICE_PER_MTOK:-}
       AI_OUTPUT_PRICE_PER_MTOK: ${AI_OUTPUT_PRICE_PER_MTOK:-}
+      DASHBOARD_USER: ${DASHBOARD_USER:-}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,19 +65,6 @@ services:
       resources:
         limits:
           memory: 128M
-
-  adminer:
-    image: adminer:latest
-    restart: unless-stopped
-    expose:
-      - "8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 64M
 
 volumes:
   orchestr8ai-pg-data:

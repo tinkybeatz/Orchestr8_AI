@@ -12,6 +12,7 @@ import { ConsoleTelemetryAdapter } from './adapters/outbound/telemetry/console-t
 import { buildModel } from './adapters/outbound/ai/model-factory.js';
 import { AiSdkAdapter } from './adapters/outbound/ai/ai-sdk-adapter.js';
 import { DOCS_DIR } from './adapters/outbound/claude/docs-path.js';
+import { DashboardServer } from './adapters/inbound/http/dashboard-server.js';
 import { DiscordTextAdapter } from './adapters/inbound/discord/discord-text-adapter.js';
 import { DiscordChannelManager } from './adapters/inbound/discord/discord-channel-manager.js';
 import { MessageRouter } from './application/services/message-router.js';
@@ -86,6 +87,13 @@ telemetry.log('info', 'Orchestr8_AI N8N Assistant ready.', {
   discord: 'connected',
   orchestratorChannel: config.orchestratorChannelId,
 });
+
+// Dashboard (optional — enabled when DASHBOARD_USER + DASHBOARD_PASSWORD are set)
+if (config.dashboardUser && config.dashboardPassword) {
+  new DashboardServer(pool, config.dashboardUser, config.dashboardPassword, config.dashboardPort).start();
+} else {
+  telemetry.log('info', 'Dashboard disabled (set DASHBOARD_USER + DASHBOARD_PASSWORD to enable).', {});
+}
 
 // Graceful shutdown
 const shutdown = async (): Promise<void> => {

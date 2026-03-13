@@ -25,6 +25,12 @@ export interface EnvConfig {
   aiInputPricePerMTok: number | undefined;
   /** Override output token price in $/MTok (env: AI_OUTPUT_PRICE_PER_MTOK). */
   aiOutputPricePerMTok: number | undefined;
+  /** Dashboard basic-auth username (env: DASHBOARD_USER). Omit to disable. */
+  dashboardUser: string | undefined;
+  /** Dashboard basic-auth password (env: DASHBOARD_PASSWORD). Omit to disable. */
+  dashboardPassword: string | undefined;
+  /** HTTP port for the dashboard (env: DASHBOARD_PORT, default: 3000). */
+  dashboardPort: number;
 }
 
 const VALID_PROVIDERS: AiProvider[] = [
@@ -88,5 +94,8 @@ export function loadEnvConfig(): EnvConfig {
     aiBaseUrl: process.env['AI_BASE_URL'],
     aiInputPricePerMTok: parseOptionalFloat('AI_INPUT_PRICE_PER_MTOK'),
     aiOutputPricePerMTok: parseOptionalFloat('AI_OUTPUT_PRICE_PER_MTOK'),
+    dashboardUser: process.env['DASHBOARD_USER'],
+    dashboardPassword: process.env['DASHBOARD_PASSWORD'],
+    dashboardPort: parseInt(process.env['DASHBOARD_PORT'] ?? '3000', 10),
   };
 }
