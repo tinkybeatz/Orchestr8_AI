@@ -85,20 +85,33 @@ country is not FR" not "IF node for conditional branching".
 
 ### Step 4 — Save
 
-Call `save_doc` for each workflow:
-- `type`: `workflows`
-- `slug`: workflow name in lowercase, hyphenated (e.g. `daily-calendar-check`)
-- `content`: the full markdown document
+For each workflow, make two tool calls in sequence:
 
-If a doc already exists for that slug (`get_doc` to check), overwrite it — the
-workflow definition is the source of truth.
+**1. `save_workflow`** — store the raw workflow JSON:
+- `workflowId`: the n8n workflow ID
+- `name`: the workflow name
+- `content`: the raw workflow JSON object returned by the MCP tool
+
+**2. `document_workflow`** — store the structured documentation:
+- `workflowId`: same ID as above
+- `documentation`: a structured object with:
+  - `overview` — 2–4 sentences describing the workflow end-to-end in plain English
+  - `trigger` — how/when it starts (exact webhook URL, cron expression, manual, etc.)
+  - `dataFlow` — narrative of how data moves through the workflow from trigger to output
+  - `nodes` — array of every node with `name`, `type`, `role` (its purpose in THIS workflow),
+    and `configSummary` (key config notes: URL called, fields mapped, conditions, etc.)
+  - `errorHandling` — error handling strategy, or `"none"` if absent
+  - `externalDeps` — list of external services, APIs, and credential names used
+  - `notes` (optional) — edge cases, known failure modes, or anything else to watch
+
+Fill every field from what you actually read. Never infer — read the config.
 
 ### Step 5 — Report
 
-After saving all documents, reply with a summary:
-- List of workflows documented (name + slug)
+After saving all workflows, reply with a summary:
+- List of workflows documented (name + workflowId)
 - Any workflows skipped and why (e.g. empty, no nodes)
-- Invite the user to read any doc with `get_doc`
+- Invite the user to retrieve any workflow with `get_workflow`
 
 ## Quality Rules
 
@@ -108,7 +121,7 @@ After saving all documents, reply with a summary:
 - **Node Breakdown must be specific** — "What it does" describes this workflow's context,
   not the node type in general
 - Never document a workflow you haven't fully read
-- Never skip the `save_doc` step — undocumented work is lost on session end
+- Never skip the `save_workflow` + `document_workflow` steps — undocumented work is lost on session end
 
 ## Tone
 

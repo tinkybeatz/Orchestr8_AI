@@ -86,7 +86,22 @@ Every project channel agent has the following tools available regardless of role
 
 **`clear_conversation_history`** — Wipe all conversation history for this channel. Always confirm with user first.
 
-**Do NOT write files to disk.** File writes are ephemeral in Docker. Use `save_doc` instead.
+**`save_workflow`** — Save or update a workflow's raw JSON content from n8n into persistent storage.
+- `workflowId` — the n8n workflow ID
+- `name` — the workflow name
+- `content` — the raw workflow JSON object returned by the n8n MCP tool
+
+**`document_workflow`** — Save or update the structured documentation for a saved workflow.
+- `workflowId` — the n8n workflow ID
+- `documentation` — structured object: `overview`, `trigger`, `dataFlow`, `nodes[]`, `errorHandling`, `externalDeps`, `notes`
+
+**`list_workflows`** — List all workflows saved for this project (workflowId, name, hasDocumentation, syncedAt).
+
+**`get_workflow`** — Retrieve a saved workflow's full JSON content and documentation by workflowId.
+
+**`delete_workflow`** — Permanently delete a saved workflow record. Always confirm with user first.
+
+**Do NOT write files to disk.** File writes are ephemeral in Docker. Use `save_doc` or workflow tools instead.
 
 ## Operating Conventions
 
@@ -95,4 +110,4 @@ Every project channel agent has the following tools available regardless of role
 - Never echo API keys back to the user.
 - When unsure about a workflow's current state, read it first (list_workflows, get_workflow).
 - The IMPROVER role is the only one authorised to edit files in `docs/skills/`.
-- Use the `save_doc` tool for any documentation that should persist — never write files to disk.
+- Use `save_doc` for general project notes, and `save_workflow` + `document_workflow` for workflow-specific data — never write files to disk.

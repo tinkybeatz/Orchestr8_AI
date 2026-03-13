@@ -42,6 +42,20 @@ services:
         limits:
           memory: 256M
 
+  adminer:
+    image: adminer:latest
+    container_name: orchestr8ai-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
   clickhouse:
     image: clickhouse/clickhouse-server:24.3-alpine
     container_name: orchestr8ai-clickhouse

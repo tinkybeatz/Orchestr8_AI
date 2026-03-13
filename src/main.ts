@@ -6,6 +6,7 @@ import { PostgresStateStore } from './adapters/outbound/state/postgres-state-sto
 import { PostgresProjectRegistry } from './adapters/outbound/state/postgres-project-registry.js';
 import { PostgresConversationContext } from './adapters/outbound/state/postgres-conversation-context.js';
 import { PostgresProjectDocuments } from './adapters/outbound/state/postgres-project-documents.js';
+import { PostgresWorkflowRegistry } from './adapters/outbound/state/postgres-workflow-registry.js';
 import { JetStreamEventBus } from './adapters/outbound/eventbus/jetstream-event-bus.js';
 import { ConsoleTelemetryAdapter } from './adapters/outbound/telemetry/console-telemetry-adapter.js';
 import { buildModel } from './adapters/outbound/ai/model-factory.js';
@@ -35,6 +36,7 @@ const stateStore = new PostgresStateStore(pool);
 const projectRegistry = new PostgresProjectRegistry(pool, config.encryptionKey);
 const conversationContext = new PostgresConversationContext(pool);
 const projectDocuments = new PostgresProjectDocuments(pool);
+const workflowRegistry = new PostgresWorkflowRegistry(pool);
 const eventBus = new JetStreamEventBus(config.natsUrl);
 await eventBus.connect();
 const telemetry = new ConsoleTelemetryAdapter();
@@ -60,6 +62,7 @@ const router = new MessageRouter({
   docsDir: DOCS_DIR,
   projectRegistry,
   projectDocuments,
+  workflowRegistry,
   conversationContext,
   aiAgent,
   orchestratorToolDeps: {

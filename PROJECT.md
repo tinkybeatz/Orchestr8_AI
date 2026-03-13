@@ -311,8 +311,8 @@ Enforced by `check-dependency-direction.ts` in CI.
 
 ## What does not exist yet (extension points)
 
-- **REST API** — `project_documents` and `projects` tables are ready for a dashboard but
-  no HTTP server exists yet.
+- **REST API** — `project_documents` and `projects` tables are ready; no HTTP server exists
+  yet. Use Adminer (included in the Docker stack) for direct DB inspection.
 - **NATS consumers** — streams are set up but nothing subscribes. A future listener could
   trigger automations when `orchestr8ai.discord.project.created` fires.
 - **Tests** — CI passes with `--passWithNoTests`. The hexagonal architecture makes unit

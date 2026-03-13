@@ -4,6 +4,7 @@ import type { AiAgentPort } from '../../ports/outbound/ai-agent.port.js';
 import type { ConversationContextPort } from '../../ports/outbound/conversation-context.port.js';
 import type { ProjectRecord } from '../../ports/outbound/project-registry.port.js';
 import type { ProjectDocumentsPort } from '../../ports/outbound/project-documents.port.js';
+import type { WorkflowRegistryPort } from '../../ports/outbound/workflow-registry.port.js';
 import { buildProjectTools } from './project-tools.js';
 
 function formatTokens(n: number): string {
@@ -57,6 +58,7 @@ export class ProjectAgent {
     private readonly aiAgent: AiAgentPort,
     private readonly context: ConversationContextPort,
     private readonly documents: ProjectDocumentsPort,
+    private readonly workflows: WorkflowRegistryPort,
     private readonly docsDir: string,
   ) {}
 
@@ -79,6 +81,7 @@ export class ProjectAgent {
 
     const tools = buildProjectTools({
       documents: this.documents,
+      workflows: this.workflows,
       conversationContext: this.context,
       project,
       userId,

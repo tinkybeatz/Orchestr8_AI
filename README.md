@@ -137,6 +137,130 @@ docker compose -f docker-compose.prod.yml logs -f orchestr8ai
 
 ---
 
+## Database Dashboard
+
+Orchestr8_AI ships with [Adminer](https://www.adminer.org/) — a lightweight web UI for
+inspecting the PostgreSQL database. It is included in both the local dev and production Docker stacks.
+
+### Local access
+
+After `npm run infra:up`, open: **http://localhost:8080**
+
+Login form:
+
+| Field | Value |
+|---|---|
+| System | PostgreSQL |
+| Server | `postgres` |
+| Username | `orchestr8ai` |
+| Password | `orchestr8ai_dev` |
+| Database | `orchestr8ai_dev` |
+
+### Production access
+
+In `docker-compose.prod.yml` the Adminer port is bound to `127.0.0.1` — it is **not publicly
+reachable** by default. Choose one of the following access methods:
+
+---
+
+**Option A — SSH tunnel** *(most secure, no extra config)*
+
+Open a tunnel from your local machine to the server:
+
+```bash
+ssh -L 8080:localhost:8080 user@yourserver
+```
+
+Keep that terminal open, then open **http://localhost:8080** in your browser. The tunnel is only active while the SSH session runs. To run it in the background instead:
+
+```bash
+ssh -fNL 8080:localhost:8080 user@yourserver
+```
+
+Login form:
+
+| Field | Value |
+|---|---|
+| System | PostgreSQL |
+| Server | `postgres` |
+| Username | `orchestr8ai` |
+| Password | your `POSTGRES_PASSWORD` value |
+| Database | `orchestr8ai_prod` |
+
+---
+
+**Option B — Public URL via reverse proxy** *(platform or nginx/Caddy)*
+
+This gives Adminer a permanent HTTPS URL. Always protect it with a password before exposing it publicly.
+
+**Coolify:**
+1. Open your Coolify project → locate the `adminer` service
+2. Go to **Domains** → add a domain (e.g. `db.yourdomain.com`) — SSL is provisioned automatically
+3. Go to **Security** → enable **Basic Auth** → set a username and password
+4. Click **Save** then **Redeploy**
+5. Open `https://db.yourdomain.com` — enter the Basic Auth credentials, then log in with the form above
+
+**Nginx (manual):**
+```nginx
+server {
+    listen 443 ssl;
+    server_name db.yourdomain.com;
+    # ... your SSL config ...
+
+    auth_basic "Adminer";
+    auth_basic_user_file /etc/nginx/.htpasswd;  # htpasswd -c /etc/nginx/.htpasswd youruser
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+```
+
+**Caddy:**
+```
+db.yourdomain.com {
+    basicauth {
+        youruser <bcrypt-hash>   # caddy hash-password --plaintext yourpassword
+    }
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+---
+
+**Option C — Firewall-restricted port** *(office/LAN only)*
+
+Edit `docker-compose.prod.yml` and change the Adminer port binding:
+
+```yaml
+# From (localhost only):
+- "127.0.0.1:${ADMINER_PORT:-8080}:8080"
+
+# To (specific trusted IP only):
+- "YOUR_OFFICE_IP:8080:8080"
+```
+
+Then open port 8080 in your server's firewall for that IP only.
+
+---
+
+### Tables visible after login
+
+| Table | Content |
+|---|---|
+| `projects` | All projects — name, purpose, status, n8n URL, channel IDs |
+| `workflows` | Saved workflow JSON + structured documentation, linked to projects |
+| `project_documents` | Saved docs — type, slug, content, timestamps |
+| `conversation_context` | Per-channel conversation history |
+| `agent_runs` | Agent run states |
+| `run_checkpoints` | Checkpoint states per run |
+| `outbox` | Pending/dispatched NATS events |
+| `schema_versions` | Applied DB migrations |
+
+> `n8n_key_enc` in `projects` stores the AES-256-GCM encrypted API key — the plaintext key is never visible.
+
+---
+
 ## Supported AI Providers
 
 Set `AI_PROVIDER` to one of the following values:

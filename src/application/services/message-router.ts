@@ -3,6 +3,7 @@ import type { ConversationContextPort } from '../ports/outbound/conversation-con
 import type { AiAgentPort } from '../ports/outbound/ai-agent.port.js';
 import type { ProjectRegistryPort } from '../ports/outbound/project-registry.port.js';
 import type { ProjectDocumentsPort } from '../ports/outbound/project-documents.port.js';
+import type { WorkflowRegistryPort } from '../ports/outbound/workflow-registry.port.js';
 import type { TelemetryPort } from '../ports/outbound/telemetry.port.js';
 import type { TextConversationPort } from '../ports/inbound/text-conversation.port.js';
 import { OrchestratorAgent } from '../agents/orchestrator/orchestrator-agent.js';
@@ -15,6 +16,7 @@ export interface MessageRouterDeps {
   docsDir: string;
   projectRegistry: ProjectRegistryPort;
   projectDocuments: ProjectDocumentsPort;
+  workflowRegistry: WorkflowRegistryPort;
   conversationContext: ConversationContextPort;
   aiAgent: AiAgentPort;
   orchestratorToolDeps: OrchestratorToolDeps;
@@ -50,6 +52,7 @@ export class MessageRouter {
       deps.aiAgent,
       deps.conversationContext,
       deps.projectDocuments,
+      deps.workflowRegistry,
       deps.docsDir,
     );
   }
