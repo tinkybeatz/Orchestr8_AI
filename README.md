@@ -143,17 +143,14 @@ Orchestr8_AI includes a built-in read-only dashboard served directly from the bo
 no extra Docker service required. It's protected by HTTP Basic Auth with credentials you set
 in your environment variables.
 
-Port 3000 is exposed within the Docker network. On Coolify, `SERVICE_FQDN_ORCHESTR8AI`
-routes it automatically. For other setups, change `expose:` to `ports:` in
-`docker-compose.prod.yml` to publish the port to the host.
-
 ### Setup
 
 | Variable | Required | Description |
 |---|---|---|
 | `DASHBOARD_USER` | ✅ | Username for HTTP Basic Auth |
 | `DASHBOARD_PASSWORD` | ✅ | Password for HTTP Basic Auth |
-| `DASHBOARD_PORT` | ➖ | Port to publish (default: `3000`) |
+| `DOMAIN` | ✅ (prod) | Public hostname, no `https://` prefix — e.g. `orchestr8ai.yourdomain.com` |
+| `DASHBOARD_PORT` | ➖ | Internal port (default: `3000`) |
 
 If `DASHBOARD_USER` or `DASHBOARD_PASSWORD` are not set, the dashboard is disabled entirely.
 
@@ -164,24 +161,31 @@ and enter your credentials when prompted.
 
 ### Production access — Coolify
 
-Add these three env vars in Coolify and deploy — no UI steps required:
+`docker-compose.prod.yml` contains explicit Traefik labels and declares the `coolify`
+external network, so the container is visible to Coolify's Traefik proxy without any manual
+UI configuration.
+
+Add these env vars in Coolify and deploy:
 
 ```
 DASHBOARD_USER=admin
 DASHBOARD_PASSWORD=a-strong-password
-SERVICE_FQDN_ORCHESTR8AI=https://yourdomain.com
+DOMAIN=orchestr8ai.yourdomain.com
+SERVICE_FQDN_ORCHESTR8AI=https://orchestr8ai.yourdomain.com
 ```
 
-Coolify reads `SERVICE_FQDN_ORCHESTR8AI` and automatically configures Traefik routing
-and provisions a Let's Encrypt SSL cert. Visit `https://yourdomain.com/dashboard`.
+- `DOMAIN` — used by the Traefik labels in the compose file to set the routing rule
+- `SERVICE_FQDN_ORCHESTR8AI` — tells Coolify to register the domain and provision a Let's Encrypt SSL cert
+
+Visit `https://orchestr8ai.yourdomain.com/dashboard`.
 
 ### Production access — nginx / Caddy / other
 
-First, change `expose:` to `ports:` in `docker-compose.prod.yml` so the port is
-published to the host:
+Change `expose:` to `ports:` in the `orchestr8ai` service of `docker-compose.prod.yml`
+so the port is published to the host (and remove the Traefik labels and `coolify` network
+if you're not using Traefik):
 
 ```yaml
-# docker-compose.prod.yml — orchestr8ai service
 ports:
   - "${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
 ```

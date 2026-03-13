@@ -5,6 +5,22 @@ services:
     restart: unless-stopped
     expose:
       - "${DASHBOARD_PORT:-3000}"
+    # Traefik labels — tell Coolify's proxy how to route HTTPS traffic to this container.
+    # Set DOMAIN in your environment (e.g. orchestr8ai.tinky.cloud — no https:// prefix).
+    # SERVICE_FQDN_ORCHESTR8AI is still read by Coolify to register the domain + issue
+    # the Let's Encrypt cert; the labels here make the actual routing explicit and reliable.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.orchestr8ai.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.orchestr8ai.entrypoints=websecure"
+      - "traefik.http.routers.orchestr8ai.tls=true"
+      - "traefik.http.routers.orchestr8ai.tls.certresolver=letsencrypt"
+      - "traefik.http.services.orchestr8ai.loadbalancer.server.port=${DASHBOARD_PORT:-3000}"
+      # Tell Traefik which network to use when the container is on multiple networks
+      - "traefik.docker.network=coolify"
+    networks:
+      - default   # internal: talks to postgres + nats
+      - coolify   # external: reachable by Traefik proxy
     environment:
       # Internal URLs — wired to the bundled services, no user configuration needed
       DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
@@ -71,4 +87,9 @@ volumes:
   orchestr8ai-nats-data:
 
 networks:
+  # Internal network — postgres, nats, and the bot talk to each other here
   default: {}
+  # Coolify's Traefik proxy network — must be declared external so the container
+  # is visible to the already-running traefik container on the host
+  coolify:
+    external: true
