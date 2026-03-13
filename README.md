@@ -158,49 +158,41 @@ Login form:
 
 ### Production access
 
-In `docker-compose.prod.yml` the Adminer port is bound to `127.0.0.1` — it is **not publicly
-reachable** by default. Choose one of the following access methods:
+In `docker-compose.prod.yml`, Adminer has **no published host port** — it's only reachable
+within the Docker network. Choose one of the following access methods:
 
 ---
 
-**Option A — SSH tunnel** *(most secure, no extra config)*
+**Option A — Platform domain assignment** *(Coolify — recommended)*
 
-Open a tunnel from your local machine to the server:
+Coolify routes directly to containers via its internal Docker network, so no host port is
+needed. Give Adminer its own domain and protect it with Basic Auth:
 
-```bash
-ssh -L 8080:localhost:8080 user@yourserver
-```
-
-Keep that terminal open, then open **http://localhost:8080** in your browser. The tunnel is only active while the SSH session runs. To run it in the background instead:
-
-```bash
-ssh -fNL 8080:localhost:8080 user@yourserver
-```
-
-Login form:
-
-| Field | Value |
-|---|---|
-| System | PostgreSQL |
-| Server | `postgres` |
-| Username | `orchestr8ai` |
-| Password | your `POSTGRES_PASSWORD` value |
-| Database | `orchestr8ai_prod` |
-
----
-
-**Option B — Public URL via reverse proxy** *(platform or nginx/Caddy)*
-
-This gives Adminer a permanent HTTPS URL. Always protect it with a password before exposing it publicly.
-
-**Coolify:**
 1. Open your Coolify project → locate the `adminer` service
-2. Go to **Domains** → add a domain (e.g. `db.yourdomain.com`) — SSL is provisioned automatically
-3. Go to **Security** → enable **Basic Auth** → set a username and password
-4. Click **Save** then **Redeploy**
+2. **Domains** → add a domain (e.g. `db.yourdomain.com`) — SSL is provisioned automatically
+3. **Security** → enable **Basic Auth** → set a username and password
+4. **Save** → **Redeploy**
 5. Open `https://db.yourdomain.com` — enter the Basic Auth credentials, then log in with the form above
 
-**Nginx (manual):**
+---
+
+**Option B — Reverse proxy (nginx or Caddy on manual VPS)**
+
+If nginx or Caddy runs on the same host, join it to the Docker network or proxy to the
+container by name. The simplest approach: expose Adminer only to localhost first, then proxy.
+
+Add a localhost port binding to your deployment (e.g. a `docker-compose.override.yml`):
+
+```yaml
+services:
+  adminer:
+    ports:
+      - "127.0.0.1:8080:8080"
+```
+
+Then proxy to it:
+
+**Nginx:**
 ```nginx
 server {
     listen 443 ssl;
@@ -228,19 +220,21 @@ db.yourdomain.com {
 
 ---
 
-**Option C — Firewall-restricted port** *(office/LAN only)*
+**Option C — SSH tunnel (manual VPS, on-demand access)**
 
-Edit `docker-compose.prod.yml` and change the Adminer port binding:
+First add a localhost port binding (same override as Option B above), then tunnel from your
+local machine:
 
-```yaml
-# From (localhost only):
-- "127.0.0.1:${ADMINER_PORT:-8080}:8080"
-
-# To (specific trusted IP only):
-- "YOUR_OFFICE_IP:8080:8080"
+```bash
+ssh -L 8080:localhost:8080 user@yourserver
 ```
 
-Then open port 8080 in your server's firewall for that IP only.
+Keep that terminal open and open **http://localhost:8080** in your browser. To run it in the
+background instead:
+
+```bash
+ssh -fNL 8080:localhost:8080 user@yourserver
+```
 
 ---
 
