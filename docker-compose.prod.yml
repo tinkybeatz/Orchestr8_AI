@@ -3,16 +3,8 @@ services:
     build: .
     image: orchestr8ai:latest
     restart: unless-stopped
-    expose:
-      - "${DASHBOARD_PORT:-3000}"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=coolify"
-      - "traefik.http.routers.orchestr8ai-dashboard.rule=Host(`${DASHBOARD_DOMAIN:-dashboard.example.com}`)"
-      - "traefik.http.routers.orchestr8ai-dashboard.entrypoints=https"
-      - "traefik.http.routers.orchestr8ai-dashboard.tls=true"
-      - "traefik.http.routers.orchestr8ai-dashboard.tls.certresolver=letsencrypt"
-      - "traefik.http.services.orchestr8ai-dashboard.loadbalancer.server.port=${DASHBOARD_PORT:-3000}"
+    ports:
+      - "${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
     environment:
       # Internal URLs — wired to the bundled services, no user configuration needed
       DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
@@ -32,10 +24,6 @@ services:
       DASHBOARD_USER: ${DASHBOARD_USER:-}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
       DASHBOARD_PORT: ${DASHBOARD_PORT:-3000}
-      DASHBOARD_DOMAIN: ${DASHBOARD_DOMAIN:-}
-    networks:
-      - default   # internal: bot ↔ postgres ↔ nats
-      - coolify   # external: Coolify's Traefik proxy can reach port 3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,8 +72,3 @@ volumes:
 
 networks:
   default: {}
-  # Coolify's Traefik proxy network — exists automatically on any Coolify host.
-  # If you are NOT using Coolify, remove the 'coolify' network here and the
-  # 'networks' block on the orchestr8ai service above.
-  coolify:
-    external: true
