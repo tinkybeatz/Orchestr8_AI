@@ -4,42 +4,39 @@ services:
     image: orchestr8ai:latest
     restart: unless-stopped
     expose:
-      - "${DASHBOARD_PORT:-3000}"
-    # Traefik labels — tell Coolify's proxy how to route HTTPS traffic to this container.
-    # Set DOMAIN in your environment (e.g. orchestr8ai.tinky.cloud — no https:// prefix).
-    # SERVICE_FQDN_ORCHESTR8AI is still read by Coolify to register the domain + issue
-    # the Let's Encrypt cert; the labels here make the actual routing explicit and reliable.
+      - "3000"
+    # Traefik labels — routes HTTPS traffic through Coolify's proxy to this container.
+    # Set DOMAIN in Coolify's env UI (e.g. orchestr8ai.tinky.cloud — no https:// prefix).
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.orchestr8ai.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.orchestr8ai.entrypoints=websecure"
       - "traefik.http.routers.orchestr8ai.tls=true"
       - "traefik.http.routers.orchestr8ai.tls.certresolver=letsencrypt"
-      - "traefik.http.services.orchestr8ai.loadbalancer.server.port=${DASHBOARD_PORT:-3000}"
-      # Tell Traefik which network to use when the container is on multiple networks
+      - "traefik.http.services.orchestr8ai.loadbalancer.server.port=3000"
       - "traefik.docker.network=coolify"
     networks:
       - default   # internal: talks to postgres + nats
       - coolify   # external: reachable by Traefik proxy
     environment:
-      # Internal URLs — wired to the bundled services, no user configuration needed
-      DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
-      NATS_URL: nats://nats:4222
-      # User-supplied values (from .env)
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      GUILD_ID: ${GUILD_ID}
-      ORCHESTRATOR_CHANNEL_ID: ${ORCHESTRATOR_CHANNEL_ID}
-      PROJECTS_CATEGORY_ID: ${PROJECTS_CATEGORY_ID:-}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      AI_PROVIDER: ${AI_PROVIDER}
-      AI_MODEL: ${AI_MODEL}
-      AI_API_KEY: ${AI_API_KEY}
-      AI_BASE_URL: ${AI_BASE_URL:-}
-      AI_INPUT_PRICE_PER_MTOK: ${AI_INPUT_PRICE_PER_MTOK:-}
-      AI_OUTPUT_PRICE_PER_MTOK: ${AI_OUTPUT_PRICE_PER_MTOK:-}
-      DASHBOARD_USER: ${DASHBOARD_USER:-}
-      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
-      DASHBOARD_PORT: ${DASHBOARD_PORT:-3000}
+      # Hardcoded internal URLs — never set by user
+      - DATABASE_URL=postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
+      - NATS_URL=nats://nats:4222
+      # Pass-through — Coolify injects these from its env UI without creating empty duplicate rows
+      - DISCORD_TOKEN
+      - GUILD_ID
+      - ORCHESTRATOR_CHANNEL_ID
+      - PROJECTS_CATEGORY_ID
+      - ENCRYPTION_KEY
+      - AI_PROVIDER
+      - AI_MODEL
+      - AI_API_KEY
+      - AI_BASE_URL
+      - AI_INPUT_PRICE_PER_MTOK
+      - AI_OUTPUT_PRICE_PER_MTOK
+      - DASHBOARD_USER
+      - DASHBOARD_PASSWORD
+      - DASHBOARD_PORT
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,9 +47,9 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: orchestr8ai
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: orchestr8ai_prod
+      - POSTGRES_USER=orchestr8ai
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=orchestr8ai_prod
     volumes:
       - orchestr8ai-pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -68,7 +65,6 @@ services:
   nats:
     image: nats:2.10-alpine
     restart: unless-stopped
-    # Config passed as CLI flags — no bind mounts needed, works on any platform
     command: ["-js", "--store_dir", "/data/jetstream", "-m", "8222"]
     volumes:
       - orchestr8ai-nats-data:/data
@@ -87,9 +83,6 @@ volumes:
   orchestr8ai-nats-data:
 
 networks:
-  # Internal network — postgres, nats, and the bot talk to each other here
   default: {}
-  # Coolify's Traefik proxy network — must be declared external so the container
-  # is visible to the already-running traefik container on the host
   coolify:
     external: true
