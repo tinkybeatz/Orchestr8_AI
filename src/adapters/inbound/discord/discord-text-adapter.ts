@@ -58,7 +58,7 @@ export class DiscordTextAdapter implements TextConversationPort {
   async sendReply(channelId: string, content: string): Promise<void> {
     const channel = await this.client.channels.fetch(channelId);
     if (!channel?.isTextBased()) return;
-    const chunks = splitMessage(content, DISCORD_MAX_MESSAGE_LENGTH);
+    const chunks = splitMessage(content, DISCORD_MAX_MESSAGE_LENGTH).filter((c) => c.trim().length > 0);
     for (const chunk of chunks) {
       await (channel as TextChannel).send(chunk);
     }

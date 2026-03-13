@@ -93,7 +93,7 @@ export class AiSdkAdapter implements AiAgentPort {
   ) {}
 
   async run(options: AiRunOptions): Promise<AiRunResult> {
-    const { system, messages, tools, n8nConfig, maxSteps = 5 } = options;
+    const { system, messages, tools, n8nConfig, maxSteps = 20 } = options;
 
     let n8nTools: Record<string, Tool> = {};
     let closeMcp: (() => Promise<void>) | undefined;
