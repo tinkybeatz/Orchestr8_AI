@@ -3,8 +3,8 @@ services:
     build: .
     image: orchestr8ai:latest
     restart: unless-stopped
-    ports:
-      - "${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
+    expose:
+      - "${DASHBOARD_PORT:-3000}"
     environment:
       # Internal URLs — wired to the bundled services, no user configuration needed
       DATABASE_URL: postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod

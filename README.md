@@ -143,7 +143,9 @@ Orchestr8_AI includes a built-in read-only dashboard served directly from the bo
 no extra Docker service required. It's protected by HTTP Basic Auth with credentials you set
 in your environment variables.
 
-Port 3000 is published to the host, so any reverse proxy can reach it at `localhost:3000`.
+Port 3000 is exposed within the Docker network. On Coolify, `SERVICE_FQDN_ORCHESTR8AI`
+routes it automatically. For other setups, change `expose:` to `ports:` in
+`docker-compose.prod.yml` to publish the port to the host.
 
 ### Setup
 
@@ -162,14 +164,31 @@ and enter your credentials when prompted.
 
 ### Production access — Coolify
 
-1. Add `DASHBOARD_USER` and `DASHBOARD_PASSWORD` to your Coolify environment variables and deploy
-2. In Coolify → open your `orchestr8ai` service → **Domains** tab
-3. Click **Add** → enter your domain (e.g. `dashboard.yourdomain.com`) → set **Port** to `3000`
-4. Save — Coolify provisions the SSL cert via Let's Encrypt automatically
-5. Visit `https://dashboard.yourdomain.com/dashboard`
+Add these three env vars in Coolify and deploy — no UI steps required:
 
-### Production access — nginx
+```
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=a-strong-password
+SERVICE_FQDN_ORCHESTR8AI=https://yourdomain.com
+```
 
+Coolify reads `SERVICE_FQDN_ORCHESTR8AI` and automatically configures Traefik routing
+and provisions a Let's Encrypt SSL cert. Visit `https://yourdomain.com/dashboard`.
+
+### Production access — nginx / Caddy / other
+
+First, change `expose:` to `ports:` in `docker-compose.prod.yml` so the port is
+published to the host:
+
+```yaml
+# docker-compose.prod.yml — orchestr8ai service
+ports:
+  - "${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
+```
+
+Then proxy to `localhost:3000` from your reverse proxy:
+
+**nginx:**
 ```nginx
 server {
     listen 443 ssl;
@@ -184,17 +203,16 @@ server {
 }
 ```
 
-### Production access — Caddy (auto-SSL, no extra config)
-
+**Caddy** (auto-SSL, no cert config needed):
 ```
 dashboard.yourdomain.com {
     reverse_proxy localhost:3000
 }
 ```
 
-Caddy provisions the Let's Encrypt cert automatically. No other configuration needed.
-
 ### Production access — direct IP (no domain)
+
+Change `expose:` to `ports:` as above, then access via:
 
 ```
 http://your-server-ip:3000/dashboard
