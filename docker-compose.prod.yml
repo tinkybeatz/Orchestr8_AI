@@ -32,6 +32,9 @@ services:
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
       DASHBOARD_PORT: ${DASHBOARD_PORT:-3000}
       DASHBOARD_DOMAIN: ${DASHBOARD_DOMAIN:-}
+    networks:
+      - default   # internal: bot ↔ postgres ↔ nats
+      - coolify   # external: Coolify's Traefik proxy can reach port 3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,3 +80,11 @@ services:
 volumes:
   orchestr8ai-pg-data:
   orchestr8ai-nats-data:
+
+networks:
+  default: {}
+  # Coolify's Traefik proxy network — exists automatically on any Coolify host.
+  # If you are NOT using Coolify, remove the 'coolify' network here and the
+  # 'networks' block on the orchestr8ai service above.
+  coolify:
+    external: true
