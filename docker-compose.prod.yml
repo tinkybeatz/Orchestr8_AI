@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
-    # Traefik labels — routes HTTPS traffic through Coolify's proxy to this container.
-    # Set DOMAIN in Coolify's env UI (e.g. orchestr8ai.tinky.cloud — no https:// prefix).
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.orchestr8ai.rule=Host(`${DOMAIN}`)"
@@ -14,15 +12,9 @@ services:
       - "traefik.http.routers.orchestr8ai.tls=true"
       - "traefik.http.routers.orchestr8ai.tls.certresolver=letsencrypt"
       - "traefik.http.services.orchestr8ai.loadbalancer.server.port=3000"
-      - "traefik.docker.network=coolify"
-    networks:
-      - default   # internal: talks to postgres + nats
-      - coolify   # external: reachable by Traefik proxy
     environment:
-      # Hardcoded internal URLs — never set by user
       - DATABASE_URL=postgresql://orchestr8ai:${POSTGRES_PASSWORD}@postgres:5432/orchestr8ai_prod
       - NATS_URL=nats://nats:4222
-      # Pass-through — Coolify injects these from its env UI without creating empty duplicate rows
       - DISCORD_TOKEN
       - GUILD_ID
       - ORCHESTRATOR_CHANNEL_ID
@@ -81,8 +73,3 @@ services:
 volumes:
   orchestr8ai-pg-data:
   orchestr8ai-nats-data:
-
-networks:
-  default: {}
-  coolify:
-    external: true
