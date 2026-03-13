@@ -145,32 +145,61 @@ in your environment variables.
 
 ### Setup
 
-Add two env vars (both local and production):
-
 | Variable | Required | Description |
 |---|---|---|
 | `DASHBOARD_USER` | ✅ | Username for HTTP Basic Auth |
 | `DASHBOARD_PASSWORD` | ✅ | Password for HTTP Basic Auth |
-| `DASHBOARD_PORT` | ➖ | Port to listen on (default: `3000`) |
+| `DASHBOARD_DOMAIN` | ➖ | Domain for automatic SSL routing (Traefik/Coolify) |
+| `DASHBOARD_PORT` | ➖ | Internal port (default: `3000`) |
 
-If either credential is missing, the dashboard is disabled and a log message is printed at startup.
+If `DASHBOARD_USER` or `DASHBOARD_PASSWORD` are not set, the dashboard is disabled entirely.
 
 ### Local access
 
-Set the vars in your `.env` file, then `npm run dev`. Open:
+Set the credentials in `.env`, then `npm run dev`. Open **http://localhost:3000/dashboard**
+and enter your credentials when prompted.
 
-**http://localhost:3000/dashboard**
+### Production access — Traefik-based platforms (Coolify, CapRover)
 
-Enter your `DASHBOARD_USER` / `DASHBOARD_PASSWORD` credentials when prompted.
+Set `DASHBOARD_DOMAIN` in your environment variables and deploy. That's it — the
+`docker-compose.prod.yml` already contains Traefik labels that configure routing and
+provision SSL automatically via Let's Encrypt.
 
-### Production access (Coolify)
+```
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=a-strong-password
+DASHBOARD_DOMAIN=dashboard.yourdomain.com   ← points to your domain
+```
 
-1. Add `DASHBOARD_USER`, `DASHBOARD_PASSWORD` to your Coolify environment variables
-2. In the `orchestr8ai` service → **Domains** → add a domain → set **Port** to `3000`
-3. Deploy → open `https://yourdomain.com/dashboard`
+Open `https://dashboard.yourdomain.com/dashboard` after deployment.
 
-The dashboard runs inside the bot container on port 3000. Coolify routes to it directly via
-the internal Docker network — no separate service, no port conflicts.
+### Production access — nginx / Caddy / other reverse proxies
+
+The dashboard binds to container port 3000. Proxy to it from your reverse proxy:
+
+**nginx:**
+```nginx
+server {
+    listen 443 ssl;
+    server_name dashboard.yourdomain.com;
+    location / { proxy_pass http://localhost:3000; }
+}
+```
+
+**Caddy:**
+```
+dashboard.yourdomain.com {
+    reverse_proxy localhost:3000
+}
+```
+
+You'll need to expose port 3000 to the host first by adding to `docker-compose.prod.yml`:
+```yaml
+services:
+  orchestr8ai:
+    ports:
+      - "127.0.0.1:3000:3000"
+```
 
 ### What's shown
 
